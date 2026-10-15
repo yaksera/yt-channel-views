@@ -1,0 +1,66 @@
+YT CHANNEL VIEWS - INSTALLATION GUIDE
+=====================================
+
+Works in Google Chrome, Microsoft Edge and Brave.
+
+
+STEP 1 - Unzip
+--------------
+Right-click the zip file > "Extract All...". You will get a folder named
+"yt-channel-views". Keep it somewhere permanent (for example Documents).
+Don't delete it, because the extension runs from this folder.
+
+
+STEP 2 - Install in Chrome
+--------------------------
+1. Open Chrome and type  chrome://extensions  in the address bar, then press Enter.
+   (Edge: edge://extensions   Brave: brave://extensions)
+2. Turn ON "Developer mode" (switch in the top-right corner).
+3. Click "Load unpacked" and select the "yt-channel-views" folder
+   (the one that contains manifest.json).
+4. Click the puzzle icon in the toolbar and pin "YT Channel Views".
+
+
+STEP 3 - Get your free YouTube API key (one time, about 3 minutes)
+----------------------------------------------------------------
+1. Go to https://console.cloud.google.com/ and sign in with a Google account.
+2. Create a new project (any name).
+3. Open "APIs & Services" > "Library", search "YouTube Data API v3" and click "Enable".
+4. Open "APIs & Services" > "Credentials" > "Create credentials" > "API key".
+5. Copy the key (it starts with "AIza").
+
+   Note: a Gemini / AI Studio key will NOT work. Create a new key as described above.
+
+
+STEP 4 - Add the key
+--------------------
+1. Click the extension icon. A dashboard opens.
+2. Paste your key under "Settings" and click "Save key".
+
+
+HOW TO USE
+----------
+- Channel stats: open any YouTube channel or video and click the extension icon.
+  You get views of long videos, Shorts and live streams, recent-upload analytics,
+  the best time to publish, and the full video list (with CSV export).
+- Video insights: open any YouTube video. A panel appears at the top of the
+  right sidebar with stats, hidden tags and an SEO score.
+- Thumbnail badges: views/day and an outlier score on search, home and sidebar videos.
+- Top videos for a keyword: open the "Top videos" tab, type a keyword and choose
+  how many (up to 300 long videos + 300 Shorts), the date range and the region.
+  Click "Find videos". The lists are sorted by view count and can be exported to CSV.
+  One full search uses about 600-2,000 of the 10,000 free daily API units.
+- Keyword research: open the "Keywords" tab in the dashboard, or select text on any
+  page, right-click and choose "Explore keyword".
+
+
+TROUBLESHOOTING
+---------------
+- "API key is not valid" or "Requests ... are blocked": in Google Cloud Console, edit the
+  key. Under "API restrictions" choose "Don't restrict key" or allow
+  "YouTube Data API v3". Under "Application restrictions" choose "None".
+- "Daily API quota used up": the free limit (10,000 units a day) resets at
+  midnight Pacific time.
+- The panel doesn't show: refresh the YouTube tab after installing.
+- Chrome shows a "Disable developer mode extensions" message at startup: click the
+  X to dismiss it. The extension keeps working.

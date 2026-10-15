@@ -108,6 +108,7 @@ function scores(videos) {
 function render(q, videos, suggestions, total) {
   $('#results').hidden = false;
   $('#kwTitle').textContent = `"${q}"`;
+  $('#topLink').href = `top.html?q=${encodeURIComponent(q)}`;
   const s = scores(videos);
   const card = (title, score, sub, invert = false) => `
     <div class="card">

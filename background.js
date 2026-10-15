@@ -57,7 +57,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     );
     return true;
   }
-  if (msg?.type === 'open' && ['dashboard.html', 'keywords.html'].includes(msg.page)) {
+  if (msg?.type === 'open' && ['dashboard.html', 'keywords.html', 'top.html'].includes(msg.page)) {
     openPage(msg.page, msg.params, sender.tab);
     sendResponse({ data: true });
   }

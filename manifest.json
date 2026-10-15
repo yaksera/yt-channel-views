@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "YT Channel Views",
-  "version": "2.0.0",
-  "description": "TubeBuddy-style YouTube tools: channel views by type, video stats + tags + SEO score, thumbnail badges, keyword explorer and best time to publish.",
+  "version": "2.1.0",
+  "description": "TubeBuddy-style YouTube tools: channel views by type, video stats + tags + SEO score, thumbnail badges, keyword explorer, top videos by keyword and best time to publish.",
   "action": {
     "default_title": "Analyze this YouTube channel",
     "default_icon": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png" }

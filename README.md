@@ -21,6 +21,12 @@ TubeBuddy-style YouTube tools that run on the free YouTube Data API.
 - Tags most used by the top-ranking videos (copy them in one click)
 - The top 25 ranking videos with views, views/day, channel size and age
 
+### Top videos by keyword (Top videos tab)
+- The **100 / 200 / 300 most viewed long videos and Shorts** for any keyword, in separate lists
+- Filter by publish date (any time, last 12 / 6 months, last 30 days) and region (worldwide, India, Nepal, US, UK and more)
+- Sort by views, views/day or newest; export both lists to CSV
+- Shorts are detected exactly (YouTube serves `/shorts/ID` only for real Shorts), not guessed from the length
+
 All toggles are under **Settings** in the dashboard.
 
 ## Setup (one time)
@@ -47,8 +53,17 @@ After you pull new code, click **↻** on the extension card and refresh any ope
 | Thumbnail badges | ~2 units per 50 thumbnails |
 | Channel dashboard | ~1 unit per 25 uploads (about 40 for a 1,000-video channel) |
 | Keyword explorer | ~102 units per keyword (YouTube search costs 100). A–Z ideas are free. |
+| Top videos by keyword | ~101 units per 50 results: about 600–2,000 units for 300 long + 300 Shorts |
 
 ## Notes
 - All numbers are public data at the time you fetch them. The public API doesn't give per-day view history or real search volume, so the keyword scores and best-time analysis are estimates built from the top results and past uploads.
 - The SEO score is a simple checklist: title length, main tag in the title and description, description length, tag count and tag-box usage, hashtags, chapters, HD thumbnail, captions and HD video.
 - Features that change your own channel (A/B thumbnail tests, bulk edits) need Google sign-in and app verification, so they aren't included.
+
+## Making a zip for clients
+
+```bash
+python build_zip.py
+```
+
+This creates `dist/yt-channel-views-v<version>.zip` (the version comes from `manifest.json`). Clients follow `INSTALL.txt` inside the zip.

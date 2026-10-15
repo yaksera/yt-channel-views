@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Top Videos</title>
+  <link rel="icon" href="icons/icon32.png">
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><img src="icons/icon32.png" alt="" width="22" height="22"> Channel Views</div>
+    <nav class="nav">
+      <a href="dashboard.html">Channel</a><a href="keywords.html">Keywords</a><a href="top.html" aria-current="page">Top videos</a>
+    </nav>
+    <a class="ghost-link" href="dashboard.html?settings=1">Settings</a>
+  </header>
+
+  <main>
+    <section class="panel">
+      <h2>Most viewed videos for a keyword</h2>
+      <p class="muted small">Finds the most viewed long videos and Shorts on YouTube for any keyword, sorted by view count.</p>
+      <form id="topForm" class="top-form">
+        <input id="kw" type="text" autocomplete="off" spellcheck="false" placeholder="Keyword, e.g. nepali song, cricket highlights" required>
+        <label>Type
+          <select id="type">
+            <option value="both">Long + Shorts</option>
+            <option value="long">Long videos only</option>
+            <option value="short">Shorts only</option>
+          </select>
+        </label>
+        <label>How many
+          <select id="want">
+            <option value="100">100 each</option>
+            <option value="200">200 each</option>
+            <option value="300" selected>300 each</option>
+          </select>
+        </label>
+        <label>Published
+          <select id="since">
+            <option value="0">Any time</option>
+            <option value="365">Last 12 months</option>
+            <option value="180">Last 6 months</option>
+            <option value="30">Last 30 days</option>
+          </select>
+        </label>
+        <label>Region
+          <select id="region">
+            <option value="">Worldwide</option>
+            <option value="IN">India</option>
+            <option value="NP">Nepal</option>
+            <option value="US">United States</option>
+            <option value="GB">United Kingdom</option>
+            <option value="PK">Pakistan</option>
+            <option value="BD">Bangladesh</option>
+          </select>
+        </label>
+        <button type="submit" class="primary" id="goBtn">Find videos</button>
+        <button type="button" class="ghost" id="stopBtn" hidden>Stop</button>
+      </form>
+      <p id="estimate" class="muted small"></p>
+    </section>
+
+    <div id="status" class="status" hidden></div>
+
+    <div id="results" hidden>
+      <section id="summary" class="cards"></section>
+      <section class="panel">
+        <div class="panel-head">
+          <div id="tabs" class="seg" role="tablist"></div>
+          <div class="controls">
+            <select id="sort" aria-label="Sort">
+              <option value="views">Most viewed</option>
+              <option value="vpd">Most views / day</option>
+              <option value="new">Newest</option>
+            </select>
+            <button id="csvBtn" class="ghost" type="button">Export CSV</button>
+          </div>
+        </div>
+        <div id="table"></div>
+      </section>
+    </div>
+  </main>
+
+  <div id="tooltip" class="tooltip" hidden></div>
+  <script src="common.js"></script>
+  <script src="top.js"></script>
+</body>
+</html>
