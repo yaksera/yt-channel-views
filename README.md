@@ -26,6 +26,10 @@ TubeBuddy-style YouTube tools that run on the free YouTube Data API.
 - Filter by publish date (any time, last 12 / 6 months, last 30 days) and region (worldwide, India, Nepal, US, UK and more)
 - Sort by views, views/day or newest; export both lists to CSV
 - Shorts are detected exactly (YouTube serves `/shorts/ID` only for real Shorts), not guessed from the length
+- **Related keywords**:
+  - **Top keywords in these videos**: phrases that repeat in the titles and tags of the videos found, ranked by those videos' total views
+  - **What people search on YouTube**: autocomplete variants (top searches, question/modifier forms like "how to …" and "… 2026", and A–Z variants). Free, no API quota
+  - **Related keywords only (free)** shows the variants without running the paid video search
 
 All toggles are under **Settings** in the dashboard.
 

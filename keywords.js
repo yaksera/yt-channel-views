@@ -1,6 +1,6 @@
 'use strict';
 
-const { api, fmt, compact, pct, esc, clamp, ago, df, median, viewsPerDay, pool } = YT;
+const { api, suggest, fmt, compact, pct, esc, clamp, ago, df, median, viewsPerDay, pool } = YT;
 const $ = (sel) => document.querySelector(sel);
 const state = { q: '', run: 0, topTags: [] };
 
@@ -9,17 +9,6 @@ function setStatus(html, error = false) {
   el.hidden = !html;
   el.className = 'status' + (error ? ' error' : '');
   el.innerHTML = html;
-}
-
-async function suggest(q) {
-  const url = `https://suggestqueries.google.com/complete/search?client=firefox&ds=yt&hl=en&q=${encodeURIComponent(q)}`;
-  try {
-    const r = await fetch(url, { credentials: 'omit' });
-    const body = JSON.parse(await r.text());
-    return Array.isArray(body?.[1]) ? body[1].map(String) : [];
-  } catch {
-    return [];
-  }
 }
 
 const label = (score) => (score >= 80 ? 'Excellent' : score >= 60 ? 'Very good' : score >= 40 ? 'Good' : score >= 20 ? 'Fair' : 'Poor');

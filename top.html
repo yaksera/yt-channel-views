@@ -57,11 +57,31 @@
         </label>
         <button type="submit" class="primary" id="goBtn">Find videos</button>
         <button type="button" class="ghost" id="stopBtn" hidden>Stop</button>
+        <button type="button" class="ghost" id="relatedBtn" title="Uses YouTube autocomplete only, no API quota">Related keywords only (free)</button>
       </form>
       <p id="estimate" class="muted small"></p>
     </section>
 
     <div id="status" class="status" hidden></div>
+
+    <section id="related" class="panel" hidden>
+      <div class="panel-head">
+        <h2>Related keywords</h2>
+        <span class="muted small">Click a keyword to put it in the search box</span>
+      </div>
+      <div class="related-grid">
+        <div>
+          <div class="panel-head sub"><h3>Top keywords in these videos</h3><button type="button" class="ghost" data-copy="mined">Copy all</button></div>
+          <p class="muted small">Phrases that repeat in the titles and tags of the videos found, ranked by those videos' total views.</p>
+          <div id="mined"></div>
+        </div>
+        <div>
+          <div class="panel-head sub"><h3>What people search on YouTube</h3><button type="button" class="ghost" data-copy="variants">Copy all</button></div>
+          <p class="muted small">Keyword variants from YouTube search autocomplete. Free, no API quota used.</p>
+          <div id="variants"></div>
+        </div>
+      </div>
+    </section>
 
     <div id="results" hidden>
       <section id="summary" class="cards"></section>
@@ -80,6 +100,7 @@
         <div id="table"></div>
       </section>
     </div>
+
   </main>
 
   <div id="tooltip" class="tooltip" hidden></div>

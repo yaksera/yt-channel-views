@@ -1,12 +1,12 @@
 'use strict';
 
-const { api, DAY, fmt, compact, esc, sum, ago, df, parseDuration, fmtDuration, viewsPerDay, pool } = YT;
+const { api, suggest, DAY, fmt, compact, esc, sum, ago, df, parseDuration, fmtDuration, viewsPerDay, pool } = YT;
 const $ = (sel) => document.querySelector(sel);
 
 const SHORT_MAX = 180; // Shorts can be up to 3 minutes long
 const MAX_PAGES = 10;  // YouTube search stops returning results after ~500 per query
 const KINDS = { long: 'Long videos', short: 'Shorts' };
-const state = { run: 0, stop: false, q: '', lists: { long: [], short: [] }, kinds: [], tab: 'long', sort: 'views', units: 0 };
+const state = { run: 0, stop: false, q: '', lists: { long: [], short: [] }, kinds: [], tab: 'long', sort: 'views', units: 0, variants: null, mined: [] };
 
 function setStatus(html, { error = false, progress = null } = {}) {
   const el = $('#status');
@@ -45,6 +45,7 @@ function toVideo(v) {
     published,
     vpd: viewsPerDay(views, published),
     duration: parseDuration(v.contentDetails?.duration),
+    tags: v.snippet.tags || [],
   };
 }
 
@@ -67,7 +68,7 @@ async function collect(kind, opts, maps, onPage) {
     if (ids.length) {
       const vr = await api('videos', {
         part: 'snippet,statistics,contentDetails', id: ids.join(','), maxResults: 50,
-        fields: 'items(id,snippet(title,publishedAt,channelId,channelTitle,liveBroadcastContent),statistics(viewCount,likeCount,commentCount),contentDetails/duration)',
+        fields: 'items(id,snippet(title,publishedAt,channelId,channelTitle,liveBroadcastContent,tags),statistics(viewCount,likeCount,commentCount),contentDetails/duration)',
       });
       state.units += 1;
       const videos = (vr.items || []).map(toVideo).filter((v) => v.state !== 'upcoming');
@@ -106,6 +107,8 @@ async function run(e) {
   $('#goBtn').disabled = true;
   $('#stopBtn').hidden = false;
 
+  const variantsPromise = keywordVariants(q, opts.region);
+  $('#related').hidden = true;
   const maps = { long: new Map(), short: new Map() };
   const progress = () => {
     if (runId !== state.run) return;
@@ -140,6 +143,133 @@ async function run(e) {
   if (userStopped) notes.unshift('Stopped. Showing what was found so far.');
   setStatus(notes.join(' '), { error: !!error });
   render();
+  state.mined = mineKeywords(q, opts.kinds.flatMap((k) => state.lists[k]));
+  state.variants = await variantsPromise;
+  if (runId === state.run) renderRelated();
+}
+
+// ---------- related keywords ----------
+
+const MODIFIERS = ['how to', 'best', 'top', 'new', 'latest', 'why', 'what is'];
+
+// Keyword variants from YouTube autocomplete: direct suggestions, question/modifier forms and A–Z expansions.
+async function keywordVariants(q, gl) {
+  const groups = { top: [], modifiers: [], az: [] };
+  const seen = new Set([q.toLowerCase()]);
+  const add = (group, list) => {
+    for (const x of list) {
+      const k = x.toLowerCase().trim();
+      if (k && !seen.has(k)) { seen.add(k); groups[group].push(x); }
+    }
+  };
+  const queries = [
+    ['top', q],
+    ...MODIFIERS.map((m) => ['modifiers', `${m} ${q}`]),
+    ['modifiers', `${q} ${new Date().getFullYear()}`],
+    ['modifiers', `${q} vs`],
+    ['modifiers', `${q} for`],
+    ...'abcdefghijklmnopqrstuvwxyz'.split('').map((l) => ['az', `${q} ${l}`]),
+  ];
+  const results = new Array(queries.length);
+  await pool(queries.map((x, i) => i), 6, async (i) => { results[i] = await suggest(queries[i][1], { gl }); });
+  queries.forEach(([group], i) => add(group, results[i] || [])); // keep autocomplete order
+  return groups;
+}
+
+// Words that can't start or end a keyword phrase (English + common Hindi/Nepali connectors).
+const EDGE_STOP = new Set(('a an the and or of to in on for with by at from is are was be this that it its as your you my me i we our ' +
+  'vs ft feat x ka ki ke ko hai se me mein na aur ra le lai ma').split(' '));
+// Words that make a phrase pointless at its edges or on their own.
+const EDGE_JUNK = new Set(['official', 'video', 'videos', 'hd', '4k', 'full', 'shorts', 'short', 'live']);
+const JUNK = new Set([...EDGE_JUNK, 'new', 'latest']);
+// Title separators: "|", " - ", brackets, punctuation, hashtags and "ft." start a new segment.
+const SEGMENT = /\s+[-–—]+\s+|[|()[\]{}:;,.!?#/"“”]+|\s(?:ft|feat)\b\.?/u;
+
+function phrasesOf(v) {
+  const out = new Set();
+  const words = (text) => text.toLowerCase().split(/[^\p{L}\p{M}\p{N}]+/u).filter(Boolean);
+  const edgeOk = (w) => !EDGE_STOP.has(w) && !EDGE_JUNK.has(w);
+  const ok = (ws) => edgeOk(ws[0]) && edgeOk(ws[ws.length - 1]) && !ws.every((w) => JUNK.has(w) || /^\d+$/.test(w));
+  for (const segment of v.title.toLowerCase().split(SEGMENT)) {
+    const t = words(segment);
+    for (const n of [2, 3]) {
+      for (let i = 0; i + n <= t.length; i++) {
+        const ws = t.slice(i, i + n);
+        if (ok(ws)) out.add(ws.join(' '));
+      }
+    }
+  }
+  for (const tag of v.tags) {
+    const ws = words(tag);
+    if (ws.length && ws.length <= 5 && ok(ws)) out.add(ws.join(' '));
+  }
+  return out;
+}
+
+// Phrases that keep appearing in the titles and tags of the videos found, ranked by those videos' total views.
+function mineKeywords(q, videos) {
+  const stats = new Map();
+  for (const v of videos) {
+    for (const p of phrasesOf(v)) {
+      const s = stats.get(p) || { phrase: p, count: 0, views: 0 };
+      s.count++;
+      s.views += v.views;
+      stats.set(p, s);
+    }
+  }
+  const qn = q.toLowerCase().split(/[^\p{L}\p{M}\p{N}]+/u).filter(Boolean).join(' ');
+  const minCount = videos.length >= 60 ? 3 : 2;
+  let list = [...stats.values()].filter((s) => s.count >= minCount && s.phrase !== qn);
+  // Drop a phrase when a longer phrase containing it covers (almost) the same videos.
+  list = list.filter((s) => !list.some((o) => o !== s && o.phrase.length > s.phrase.length
+    && ` ${o.phrase} `.includes(` ${s.phrase} `) && o.count >= s.count * 0.9));
+  return list.sort((a, b) => b.views - a.views).slice(0, 40);
+}
+
+function renderRelated() {
+  const sec = $('#related');
+  sec.hidden = false;
+  const chip = (text) => `<button type="button" class="chip" data-q="${esc(text)}">${esc(text)}</button>`;
+
+  const mined = state.mined;
+  const maxViews = Math.max(1, ...mined.map((m) => m.views));
+  $('#mined').innerHTML = mined.length ? `<div class="kw-list">${mined.map((m, i) => `
+      <button type="button" class="kw-row" data-q="${esc(m.phrase)}" title="${fmt(m.views)} total views">
+        <span class="kw-rank num">${i + 1}</span>
+        <span class="kw-name">${esc(m.phrase)}</span>
+        <span class="kw-bar"><span style="width:${(m.views / maxViews) * 100}%"></span></span>
+        <span class="kw-views num">${compact(m.views)}</span>
+        <span class="kw-count muted num">${m.count} videos</span>
+      </button>`).join('')}</div>`
+    : `<div class="muted small">${state.lists.long.length + state.lists.short.length ? 'No repeated keywords found in these videos.' : 'Click "Find videos" to see the keywords used by the most viewed videos.'}</div>`;
+
+  const v = state.variants || { top: [], modifiers: [], az: [] };
+  const group = (title, list) => (list.length ? `<div class="kw-group"><div class="kw-group-title">${title} <span class="muted">${list.length}</span></div><div class="chips">${list.map(chip).join('')}</div></div>` : '');
+  $('#variants').innerHTML = group('Top searches', v.top) + group('Questions &amp; modifiers', v.modifiers) + group('A–Z variants', v.az)
+    || '<div class="muted small">YouTube has no autocomplete suggestions for this keyword.</div>';
+}
+
+async function relatedOnly() {
+  const q = $('#kw').value.trim();
+  if (!q) return $('#kw').focus();
+  const runId = ++state.run;
+  state.q = q;
+  history.replaceState(null, '', `?q=${encodeURIComponent(q)}`);
+  $('#results').hidden = true;
+  $('#relatedBtn').disabled = true;
+  setStatus(`Finding keywords related to <b>${esc(q)}</b>…`);
+  const variants = await keywordVariants(q, $('#region').value);
+  $('#relatedBtn').disabled = false;
+  if (runId !== state.run) return;
+  Object.assign(state, { variants, mined: [], lists: { long: [], short: [] } });
+  setStatus('');
+  renderRelated();
+}
+
+function copyList(which) {
+  const list = which === 'mined' ? state.mined.map((m) => m.phrase)
+    : Object.values(state.variants || {}).flat();
+  return navigator.clipboard.writeText(list.join(', '));
 }
 
 function render() {
@@ -216,6 +346,21 @@ function updateEstimate() {
 }
 
 $('#topForm').onsubmit = run;
+$('#relatedBtn').onclick = relatedOnly;
+$('#related').onclick = async (e) => {
+  const copy = e.target.closest('[data-copy]');
+  if (copy) {
+    await copyList(copy.dataset.copy);
+    copy.textContent = 'Copied!';
+    setTimeout(() => { copy.textContent = 'Copy all'; }, 1500);
+    return;
+  }
+  const kw = e.target.closest('[data-q]');
+  if (!kw) return;
+  $('#kw').value = kw.dataset.q;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  $('#kw').focus();
+};
 $('#stopBtn').onclick = () => { state.stop = true; $('#stopBtn').hidden = true; };
 $('#type').onchange = $('#want').onchange = updateEstimate;
 $('#sort').onchange = () => { state.sort = $('#sort').value; renderTable(); };

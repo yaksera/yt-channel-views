@@ -48,6 +48,19 @@
     return body;
   }
 
+  // YouTube search autocomplete (free, no API quota). Returns [] on any failure.
+  async function suggest(q, { gl } = {}) {
+    const url = new URL('https://suggestqueries.google.com/complete/search');
+    url.search = new URLSearchParams({ client: 'firefox', ds: 'yt', hl: 'en', q, ...(gl ? { gl } : {}) });
+    try {
+      const r = await fetch(url, { credentials: 'omit' });
+      const body = JSON.parse(await r.text());
+      return Array.isArray(body?.[1]) ? body[1].map(String) : [];
+    } catch {
+      return [];
+    }
+  }
+
   // ---------- formatting ----------
 
   const nf = new Intl.NumberFormat();
@@ -103,7 +116,7 @@
   }
 
   g.YT = {
-    DAY, DEFAULT_SETTINGS, store, getKey, getSettings, api,
+    DAY, DEFAULT_SETTINGS, store, getKey, getSettings, api, suggest,
     fmt, compact, pct, esc, sum, clamp, ago, df, parseDuration, fmtDuration, median, viewsPerDay, pool, chunk,
   };
 })(globalThis);

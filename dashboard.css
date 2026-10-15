@@ -250,3 +250,24 @@ tbody tr:hover { background: var(--bg); }
 .top-form label { display: grid; gap: 3px; font-size: 12px; color: var(--text-2); }
 td a { text-decoration: none; }
 td a:hover { text-decoration: underline; }
+
+/* ---------- related keywords ---------- */
+.related-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; margin-top: 10px; }
+.related-grid h3 { font-size: 14px; margin: 0; }
+.panel-head.sub { margin-bottom: 2px; }
+.kw-list { display: grid; gap: 2px; margin-top: 8px; }
+.kw-row {
+  display: grid; grid-template-columns: 22px minmax(0, 1.4fr) minmax(40px, 1fr) 52px 70px; gap: 8px; align-items: center;
+  border: 0; border-radius: 6px; background: transparent; padding: 5px 6px; text-align: left; font-size: 13px;
+}
+.kw-row:hover { background: var(--bg); }
+.kw-rank { color: var(--text-3); font-size: 11px; text-align: right; }
+.kw-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kw-bar { height: 8px; background: var(--grid); border-radius: 0 4px 4px 0; overflow: hidden; }
+.kw-bar span { display: block; height: 100%; background: var(--seq-hi); border-radius: 0 4px 4px 0; }
+.kw-views { text-align: right; font-weight: 600; }
+.kw-count { text-align: right; font-size: 11px; }
+.kw-group { margin-top: 12px; }
+.kw-group-title { font-size: 12px; font-weight: 600; color: var(--text-2); }
+.kw-group .chips { margin-top: 6px; }
+@media (max-width: 800px) { .related-grid { grid-template-columns: 1fr; } }
