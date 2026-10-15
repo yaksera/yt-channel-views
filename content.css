@@ -1,0 +1,21 @@
+/* Stats badges drawn on YouTube thumbnails by content.js. */
+.ycv-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 3;
+  display: flex;
+  gap: 3px;
+  pointer-events: auto;
+  font: 600 11px/1 Roboto, Arial, sans-serif;
+  letter-spacing: .2px;
+}
+.ycv-badge span {
+  background: rgba(15, 15, 15, .82);
+  color: #fff;
+  padding: 3px 5px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.ycv-badge span.ycv-hot { background: #0f7a3d; }
+.ycv-badge span.ycv-cold { color: #bdbdbd; }

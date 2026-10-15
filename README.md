@@ -1,36 +1,54 @@
 # YT Channel Views — Chrome extension
 
-Click the extension icon on any YouTube channel, video or Short and it opens a dashboard with:
+TubeBuddy-style YouTube tools that run on the free YouTube Data API.
 
-- **Total views of Long videos, Shorts and Live streams** (separately), with upload count, average, median and share of views
-- **Recent uploads analytics** — Last 7 / 30 / 90 days, this month or previous month: views per type, uploads, avg views, % vs the channel's all-time average, a views-per-upload chart, and a table with views/day, likes and comments
-- **All videos** list — filter by type, sort by views or date, export to CSV
+## Features
 
-You can also paste any channel link, video link, `@handle` or channel ID into the search box, or right-click a YouTube link → **Analyze channel views**.
+### On YouTube pages
+- **Video insights panel** (next to every video): views, views/day, how the video compares with the channel's average (e.g. `3.2×`), like and comment rates, engagement, publish time, length and category, plus the video's **hidden tags** (copy them in one click, or click one to explore it as a keyword) and an **SEO score** checklist.
+- **Thumbnail badges** on search results, the home feed and the sidebar: views/day and an **outlier score** (views ÷ the channel's average views per video). Green means 2× or more.
+- **Right-click** a YouTube link → *Analyze channel views*. Select any text → *Explore keyword*.
 
-## Setup (one time, ~3 minutes)
+### Channel dashboard (click the extension icon)
+- **Total views of long videos, Shorts and live streams** (separately), with upload count, average, median and share of views
+- **Recent uploads** — Last 7 / 30 / 90 days, this month or previous month: views per type, % vs all-time average, a views-per-upload chart and a table
+- **Best time to publish** — heatmap of median views by weekday × time of day, the top 3 time slots and a per-weekday chart
+- **All videos** — filter, sort and export to CSV
+
+### Keyword explorer (Keywords tab)
+- Overall, **search demand**, **competition** and exact-match scores for a keyword
+- YouTube search suggestions and **A–Z long-tail ideas**
+- Tags most used by the top-ranking videos (copy them in one click)
+- The top 25 ranking videos with views, views/day, channel size and age
+
+All toggles are under **Settings** in the dashboard.
+
+## Setup (one time)
 
 ### 1. Get a free YouTube Data API key
-1. Open <https://console.cloud.google.com/> and create a project (any name).
+1. Open <https://console.cloud.google.com/> and create a project.
 2. Go to **APIs & Services → Library**, search **YouTube Data API v3**, click **Enable**.
-3. Go to **APIs & Services → Credentials → Create credentials → API key**. Copy the key.
-   (Optional: under *API restrictions* restrict it to YouTube Data API v3. Don't add a website restriction.)
+3. Go to **APIs & Services → Credentials → Create credentials → API key**.
+   Under *API restrictions*, either don't restrict it or allow **YouTube Data API v3**. Don't add a website restriction.
+   (A Gemini / AI Studio key will **not** work. Those keys are locked to Gemini.)
 
 ### 2. Load the extension
-1. Open `chrome://extensions` (works in Edge/Brave too).
-2. Turn on **Developer mode** (top right).
-3. Click **Load unpacked** and pick this folder (`D:\yt-channel-views`).
-4. Pin the extension, open any YouTube channel/video, click the icon.
-5. First time only: paste your API key in the panel and click **Save key**.
+1. Open `chrome://extensions` (works in Edge and Brave too) and turn on **Developer mode**.
+2. Click **Load unpacked** and pick this folder.
+3. Pin the extension and click its icon. Paste your API key under **Settings** and click **Save key**.
 
-## How it works
+After you pull new code, click **↻** on the extension card and refresh any open YouTube tabs.
 
-YouTube keeps hidden per-channel playlists for each upload type — `UULF…` (long videos), `UUSH…` (Shorts) and `UULV…` (live streams). The extension lists each one, then fetches exact view counts 50 videos at a time.
+## Quota (10,000 free units per day)
 
-**Quota:** the free daily quota is 10,000 units. A channel with 1,000 uploads costs about 40 units, so you can analyze hundreds of channels a day.
+| Action | Cost |
+|---|---|
+| Video insights panel | 2 units per video |
+| Thumbnail badges | ~2 units per 50 thumbnails |
+| Channel dashboard | ~1 unit per 25 uploads (about 40 for a 1,000-video channel) |
+| Keyword explorer | ~102 units per keyword (YouTube search costs 100). A–Z ideas are free. |
 
 ## Notes
-
-- View counts are exact public counts at the time you fetch. "Recent uploads" means videos *published* in that window and their total views so far (the public API doesn't give per-day views for channels you don't own).
-- The per-video sum can differ slightly from the channel's YouTube total, since that total also includes deleted, private and members-only videos.
-- Upcoming (scheduled) streams show 0 views.
+- All numbers are public data at the time you fetch them. The public API doesn't give per-day view history or real search volume, so the keyword scores and best-time analysis are estimates built from the top results and past uploads.
+- The SEO score is a simple checklist: title length, main tag in the title and description, description length, tag count and tag-box usage, hashtags, chapters, HD thumbnail, captions and HD video.
+- Features that change your own channel (A/B thumbnail tests, bulk edits) need Google sign-in and app verification, so they aren't included.

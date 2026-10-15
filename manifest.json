@@ -1,14 +1,26 @@
 {
   "manifest_version": 3,
   "name": "YT Channel Views",
-  "version": "1.0.0",
-  "description": "Total views of a YouTube channel's long videos, Shorts and live streams, plus recent-uploads analytics.",
+  "version": "2.0.0",
+  "description": "TubeBuddy-style YouTube tools: channel views by type, video stats + tags + SEO score, thumbnail badges, keyword explorer and best time to publish.",
   "action": {
     "default_title": "Analyze this YouTube channel",
     "default_icon": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png" }
   },
   "icons": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png", "128": "icons/icon128.png" },
   "background": { "service_worker": "background.js" },
+  "content_scripts": [
+    {
+      "matches": ["https://www.youtube.com/*"],
+      "js": ["common.js", "content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ],
   "permissions": ["activeTab", "storage", "contextMenus"],
-  "host_permissions": ["https://www.googleapis.com/*", "https://www.youtube.com/*"]
+  "host_permissions": [
+    "https://www.googleapis.com/*",
+    "https://www.youtube.com/*",
+    "https://suggestqueries.google.com/*"
+  ]
 }

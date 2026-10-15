@@ -8,87 +8,11 @@ const TYPES = {
   live: { label: 'Live streams', one: 'Live', prefix: 'UULV' },
 };
 const TYPE_KEYS = Object.keys(TYPES);
-const DAY = 864e5;
 const PAGE = 50;
+const { DAY, store, api, fmt, compact, esc, sum, ago, df, parseDuration, fmtDuration, median, pool } = YT;
 
 const $ = (sel) => document.querySelector(sel);
 const state = { key: '', channel: null, videos: [], fetchedAt: 0, filter: 'all', sort: 'views', shown: PAGE, run: 0 };
-
-// ---------- storage (chrome.storage inside the extension, localStorage elsewhere) ----------
-
-const store = {
-  async get(k) {
-    if (globalThis.chrome?.storage?.local) return (await chrome.storage.local.get(k))[k];
-    try { return JSON.parse(localStorage.getItem(k)); } catch { return undefined; }
-  },
-  async set(k, v) {
-    if (globalThis.chrome?.storage?.local) return chrome.storage.local.set({ [k]: v });
-    try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* ignore */ }
-  },
-};
-
-// ---------- formatting ----------
-
-const nf = new Intl.NumberFormat();
-const cf = new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 });
-const df = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
-const fmt = (n) => (n == null || Number.isNaN(n) ? '—' : nf.format(Math.round(n)));
-const compact = (n) => (n == null || Number.isNaN(n) ? '—' : cf.format(n));
-const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const sum = (arr, f) => arr.reduce((a, x) => a + (f(x) || 0), 0);
-
-function ago(ms) {
-  const d = Math.floor((Date.now() - ms) / DAY);
-  if (d < 1) return 'today';
-  if (d === 1) return '1 day ago';
-  if (d < 60) return `${d} days ago`;
-  if (d < 730) return `${Math.floor(d / 30)} months ago`;
-  return `${Math.floor(d / 365)} years ago`;
-}
-
-function parseDuration(iso) {
-  const m = /P(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/.exec(iso || '');
-  if (!m) return 0;
-  return (+m[1] || 0) * 86400 + (+m[2] || 0) * 3600 + (+m[3] || 0) * 60 + (+m[4] || 0);
-}
-
-function fmtDuration(s) {
-  if (!s) return '—';
-  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
-  const pad = (n) => String(n).padStart(2, '0');
-  return h ? `${h}:${pad(m)}:${pad(sec)}` : `${m}:${pad(sec)}`;
-}
-
-function median(nums) {
-  if (!nums.length) return null;
-  const s = [...nums].sort((a, b) => a - b), mid = s.length >> 1;
-  return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
-}
-
-// ---------- YouTube Data API ----------
-
-async function api(endpoint, params) {
-  const url = new URL(`https://www.googleapis.com/youtube/v3/${endpoint}`);
-  for (const [k, v] of Object.entries({ ...params, key: state.key })) {
-    if (v !== undefined && v !== '') url.searchParams.set(k, v);
-  }
-  const res = await fetch(url);
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    const reason = body.error?.errors?.[0]?.reason;
-    let msg = (body.error?.message || `HTTP ${res.status}`).replace(/<[^>]+>/g, '');
-    if (reason === 'quotaExceeded') msg = 'Daily API quota used up. It resets at midnight Pacific time.';
-    if (reason === 'keyInvalid' || /API key not valid/i.test(msg)) msg = 'Your API key is not valid. Click "API key" to update it.';
-    if (/are blocked/i.test(msg) && !/referer/i.test(msg)) {
-      msg = 'This API key is restricted to other APIs. In Google Cloud Console → Credentials, edit the key and add "YouTube Data API v3" under API restrictions (or create a new key).';
-    }
-    const err = new Error(msg);
-    err.status = res.status;
-    err.reason = reason;
-    throw err;
-  }
-  return body;
-}
 
 // Turns whatever the user has open (channel page, video, short, @handle, ID) into a lookup target.
 function parseInput(raw) {
@@ -196,12 +120,6 @@ async function listPlaylist(playlistId, onProgress) {
     pageToken = r.nextPageToken;
   } while (pageToken);
   return ids;
-}
-
-async function pool(items, limit, fn) {
-  let i = 0;
-  const worker = async () => { while (i < items.length) await fn(items[i++]); };
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
 }
 
 async function fetchDetails(entries, onProgress) {
@@ -317,6 +235,7 @@ function renderAll() {
   renderChannel();
   renderTypeCards();
   renderPeriod();
+  renderBestTime();
   renderFilter();
   renderAllTable();
 }
@@ -550,6 +469,97 @@ function exportCsv() {
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
+// ---------- best time to publish ----------
+
+const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const BLOCK_HOURS = 3; // 8 blocks of 3 hours per day
+
+function blockLabel(b) {
+  const f = (h) => new Date(2000, 0, 1, h).toLocaleTimeString([], { hour: 'numeric' });
+  return `${f(b * BLOCK_HOURS)}–${f(((b + 1) * BLOCK_HOURS) % 24)}`;
+}
+
+function renderBestTime() {
+  const type = $('#btType').value, windowDays = +$('#btWindow').value;
+  const now = Date.now();
+  // Skip videos under a week old (still collecting views) and scheduled streams.
+  const list = state.videos.filter((v) => (type === 'all' || v.type === type) && v.state !== 'upcoming'
+    && now - v.published >= 7 * DAY && (!windowDays || now - v.published <= windowDays * DAY));
+
+  const blocks = 24 / BLOCK_HOURS;
+  const cells = WEEKDAYS.map(() => Array.from({ length: blocks }, () => []));
+  const days = WEEKDAYS.map(() => []);
+  for (const v of list) {
+    const d = new Date(v.published);
+    const day = (d.getDay() + 6) % 7;
+    cells[day][Math.floor(d.getHours() / BLOCK_HOURS)].push(v.views);
+    days[day].push(v.views);
+  }
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  $('#btNote').textContent = `Median views of ${fmt(list.length)} uploads by the day and time they were published (your time zone: ${tz}). ` +
+    'Videos younger than 7 days are left out.';
+
+  if (list.length < 5) {
+    $('#btBest').innerHTML = '';
+    $('#btHeat').innerHTML = '<div class="empty">Not enough uploads in this window to find a pattern.</div>';
+    $('#btDays').innerHTML = '';
+    return;
+  }
+
+  const slots = [];
+  cells.forEach((row, d) => row.forEach((views, b) => views.length && slots.push({ d, b, n: views.length, med: median(views) })));
+  const minCount = slots.some((s) => s.n >= 2) ? 2 : 1;
+  const best = slots.filter((s) => s.n >= minCount).sort((a, b) => b.med - a.med).slice(0, 3);
+  $('#btBest').innerHTML = best.map((s, i) => `<div class="card">
+      <div class="label">${i === 0 ? 'Best slot' : `#${i + 1}`}</div>
+      <div class="big">${WEEKDAYS[s.d]} <span style="font-size:15px">${blockLabel(s.b)}</span></div>
+      <div class="exact num">Median ${compact(s.med)} views · ${s.n} upload${s.n > 1 ? 's' : ''}</div>
+    </div>`).join('');
+
+  // Heatmap: one blue hue, light → dark by log(median views).
+  const meds = slots.map((s) => s.med).filter((m) => m > 0);
+  const lo = Math.log(Math.min(...meds) + 1), hi = Math.log(Math.max(...meds) + 1);
+  const shade = (m) => (hi > lo ? (Math.log(m + 1) - lo) / (hi - lo) : 1);
+  let html = `<div class="heat" style="grid-template-columns: 40px repeat(${blocks}, minmax(28px, 1fr))"><div></div>`;
+  for (let b = 0; b < blocks; b++) html += `<div class="heat-h">${new Date(2000, 0, 1, b * BLOCK_HOURS).toLocaleTimeString([], { hour: 'numeric' })}</div>`;
+  cells.forEach((row, d) => {
+    html += `<div class="heat-d">${WEEKDAYS[d]}</div>`;
+    row.forEach((views, b) => {
+      if (!views.length) { html += '<div class="heat-c empty-c"></div>'; return; }
+      const t = shade(median(views));
+      html += `<div class="heat-c" data-d="${d}" data-b="${b}" style="background:color-mix(in oklab, var(--seq-hi) ${Math.round(15 + t * 85)}%, var(--seq-lo))"></div>`;
+    });
+  });
+  html += '</div><div class="heat-legend"><span>Fewer views</span><i></i><span>More views</span><span class="muted">· blank = no uploads</span></div>';
+  $('#btHeat').innerHTML = html;
+
+  const heat = $('#btHeat .heat');
+  const tip = $('#tooltip');
+  heat.onmousemove = (e) => {
+    const c = e.target.closest('.heat-c[data-d]');
+    if (!c) { tip.hidden = true; return; }
+    const views = cells[+c.dataset.d][+c.dataset.b];
+    tip.innerHTML = `<div class="t">${WEEKDAYS[+c.dataset.d]} ${blockLabel(+c.dataset.b)}</div>
+      <div class="r"><span>Uploads</span><b class="num">${views.length}</b></div>
+      <div class="r"><span>Median views</span><b class="num">${fmt(median(views))}</b></div>
+      <div class="r"><span>Best</span><b class="num">${fmt(Math.max(...views))}</b></div>`;
+    tip.hidden = false;
+    tip.style.left = `${Math.min(e.clientX + 14, window.innerWidth - tip.offsetWidth - 8)}px`;
+    tip.style.top = `${e.clientY + 14 + tip.offsetHeight > window.innerHeight - 8 ? e.clientY - tip.offsetHeight - 14 : e.clientY + 14}px`;
+  };
+  heat.onmouseleave = () => { tip.hidden = true; };
+
+  const dayMeds = days.map((v) => (v.length ? median(v) : 0));
+  const maxDay = Math.max(...dayMeds, 1);
+  $('#btDays').innerHTML = `<div class="days-title">By weekday</div>` + WEEKDAYS.map((d, i) => `
+    <div class="day-row" title="${days[i].length} uploads · median ${fmt(dayMeds[i])} views">
+      <span class="day-name">${d}</span>
+      <span class="day-bar"><span style="width:${(dayMeds[i] / maxDay) * 100}%"></span></span>
+      <span class="day-val num">${days[i].length ? compact(dayMeds[i]) : '—'}</span>
+      <span class="day-n muted num">${days[i].length}</span>
+    </div>`).join('');
+}
+
 // ---------- wiring ----------
 
 async function init() {
@@ -572,7 +582,15 @@ async function init() {
     history.replaceState(null, '', `?src=${encodeURIComponent(q)}`);
     analyze(q);
   };
+  const settings = await YT.getSettings();
+  $('#setPanel').checked = settings.videoPanel;
+  $('#setBadges').checked = settings.badges;
+  const saveSettings = () => store.set('settings', { videoPanel: $('#setPanel').checked, badges: $('#setBadges').checked });
+  $('#setPanel').onchange = saveSettings;
+  $('#setBadges').onchange = saveSettings;
+
   $('#period').onchange = () => state.channel && renderPeriod();
+  $('#btType').onchange = $('#btWindow').onchange = () => state.channel && renderBestTime();
   $('#sort').onchange = () => { state.sort = $('#sort').value; state.shown = PAGE; renderAllTable(); };
   $('#typeFilter').onclick = (e) => {
     const b = e.target.closest('button[data-k]');
@@ -590,8 +608,9 @@ async function init() {
     resizeTimer = setTimeout(() => state.channel && renderPeriod(), 150);
   });
 
-  const src = new URLSearchParams(location.search).get('src');
-  if (!state.key) $('#keyPanel').hidden = false;
+  const params = new URLSearchParams(location.search);
+  const src = params.get('src');
+  if (!state.key || params.has('settings')) $('#keyPanel').hidden = false;
   if (src && parseInput(src)) {
     $('#q').value = src;
     analyze(src);

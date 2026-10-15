@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Keyword Explorer</title>
+  <link rel="icon" href="icons/icon32.png">
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><img src="icons/icon32.png" alt="" width="22" height="22"> Channel Views</div>
+    <nav class="nav"><a href="dashboard.html">Channel</a><a href="keywords.html" aria-current="page">Keywords</a></nav>
+    <form id="kwForm" class="lookup">
+      <input id="kw" type="text" autocomplete="off" spellcheck="false" placeholder="Enter a keyword, e.g. how to edit videos">
+      <button type="submit" class="primary">Explore</button>
+    </form>
+    <a class="ghost-link" href="dashboard.html?settings=1">Settings</a>
+  </header>
+
+  <div id="status" class="status" hidden></div>
+
+  <main id="results" hidden>
+    <section class="panel">
+      <div class="panel-head">
+        <h2 id="kwTitle"></h2>
+        <span class="muted small">Based on the top 25 YouTube search results · uses ~102 API units</span>
+      </div>
+      <div id="scoreCards" class="cards compact"></div>
+      <p class="muted small" id="scoreNote"></p>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2>Search suggestions</h2><span class="muted small">What people type into YouTube search · click to explore</span></div>
+      <div id="suggestions" class="chips"></div>
+      <div class="panel-head" style="margin-top:14px">
+        <h2>Long-tail ideas</h2>
+        <button id="longtailBtn" class="ghost" type="button">Find A–Z ideas</button>
+      </div>
+      <div id="longtail" class="chips"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2>Tags used by top videos</h2><button id="copyTags" class="ghost" type="button">Copy top tags</button></div>
+      <div id="tags" class="chips"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2>Top ranking videos</h2></div>
+      <div id="topTable"></div>
+    </section>
+  </main>
+
+  <script src="common.js"></script>
+  <script src="keywords.js"></script>
+</body>
+</html>

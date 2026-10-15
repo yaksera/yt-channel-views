@@ -10,16 +10,18 @@
 <body>
   <header class="topbar">
     <div class="brand"><img src="icons/icon32.png" alt="" width="22" height="22"> Channel Views</div>
+    <nav class="nav"><a href="dashboard.html" aria-current="page">Channel</a><a href="keywords.html">Keywords</a></nav>
     <form id="lookup" class="lookup">
       <input id="q" type="text" autocomplete="off" spellcheck="false"
              placeholder="Paste a channel or video link, @handle or channel ID">
       <button type="submit" class="primary">Analyze</button>
     </form>
-    <button id="keyBtn" class="ghost" type="button">API key</button>
+    <button id="keyBtn" class="ghost" type="button">Settings</button>
   </header>
 
   <section id="keyPanel" class="panel key-panel" hidden>
-    <h2>YouTube Data API key</h2>
+    <h2>Settings</h2>
+    <h3>YouTube Data API key</h3>
     <p class="muted">
       This extension reads public data through the free YouTube Data API v3. Create a key at
       <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Google Cloud Console → Credentials</a>
@@ -29,6 +31,11 @@
       <input id="keyInput" type="password" autocomplete="off" spellcheck="false" placeholder="AIza…">
       <button type="submit" class="primary">Save key</button>
     </form>
+    <h3>On YouTube pages</h3>
+    <div class="toggles">
+      <label><input type="checkbox" id="setPanel"> Show the <b>Video insights</b> panel (stats, tags, SEO score) next to videos</label>
+      <label><input type="checkbox" id="setBadges"> Show <b>views/day</b> and <b>outlier</b> badges on thumbnails (search, home, sidebar)</label>
+    </div>
   </section>
 
   <div id="status" class="status" hidden></div>
@@ -57,6 +64,31 @@
 
     <section class="panel">
       <div class="panel-head">
+        <h2>Best time to publish</h2>
+        <div class="controls">
+          <select id="btType" aria-label="Upload type">
+            <option value="all">All uploads</option>
+            <option value="long">Long videos</option>
+            <option value="short">Shorts</option>
+            <option value="live">Live streams</option>
+          </select>
+          <select id="btWindow" aria-label="Time window">
+            <option value="180">Last 6 months</option>
+            <option value="365" selected>Last 12 months</option>
+            <option value="0">All time</option>
+          </select>
+        </div>
+      </div>
+      <p id="btNote" class="muted small"></p>
+      <div id="btBest" class="cards compact"></div>
+      <div class="bt-grid">
+        <div id="btHeat"></div>
+        <div id="btDays"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
         <h2>All videos</h2>
         <div class="controls">
           <div id="typeFilter" class="seg" role="tablist"></div>
@@ -75,6 +107,7 @@
   </main>
 
   <div id="tooltip" class="tooltip" hidden></div>
+  <script src="common.js"></script>
   <script src="dashboard.js"></script>
 </body>
 </html>
