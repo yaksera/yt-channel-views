@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Channel Views</title>
+  <link rel="icon" href="icons/icon32.png">
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><img src="icons/icon32.png" alt="" width="22" height="22"> Channel Views</div>
+    <form id="lookup" class="lookup">
+      <input id="q" type="text" autocomplete="off" spellcheck="false"
+             placeholder="Paste a channel or video link, @handle or channel ID">
+      <button type="submit" class="primary">Analyze</button>
+    </form>
+    <button id="keyBtn" class="ghost" type="button">API key</button>
+  </header>
+
+  <section id="keyPanel" class="panel key-panel" hidden>
+    <h2>YouTube Data API key</h2>
+    <p class="muted">
+      This extension reads public data through the free YouTube Data API v3. Create a key at
+      <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Google Cloud Console → Credentials</a>
+      (enable <b>YouTube Data API v3</b> for the project first). The key is stored only in this browser.
+    </p>
+    <form id="keyForm" class="lookup">
+      <input id="keyInput" type="password" autocomplete="off" spellcheck="false" placeholder="AIza…">
+      <button type="submit" class="primary">Save key</button>
+    </form>
+  </section>
+
+  <div id="status" class="status" hidden></div>
+
+  <main id="results" hidden>
+    <section id="channelCard" class="channel"></section>
+
+    <section id="typeCards" class="cards"></section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Recent uploads</h2>
+        <select id="period" aria-label="Period">
+          <option value="7">Last 7 days</option>
+          <option value="30" selected>Last 30 days</option>
+          <option value="90">Last 90 days</option>
+          <option value="thisMonth">This month</option>
+          <option value="prevMonth">Previous month</option>
+        </select>
+      </div>
+      <p id="periodLabel" class="muted small"></p>
+      <div id="periodCards" class="cards compact"></div>
+      <div id="chartWrap" class="chart-wrap"></div>
+      <div id="periodTable"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>All videos</h2>
+        <div class="controls">
+          <div id="typeFilter" class="seg" role="tablist"></div>
+          <select id="sort" aria-label="Sort">
+            <option value="views">Most viewed</option>
+            <option value="new">Newest</option>
+            <option value="old">Oldest</option>
+            <option value="least">Least viewed</option>
+          </select>
+          <button id="csvBtn" class="ghost" type="button">Export CSV</button>
+        </div>
+      </div>
+      <div id="allTable"></div>
+      <div class="more-row"><button id="moreBtn" class="ghost" type="button" hidden>Show more</button></div>
+    </section>
+  </main>
+
+  <div id="tooltip" class="tooltip" hidden></div>
+  <script src="dashboard.js"></script>
+</body>
+</html>
